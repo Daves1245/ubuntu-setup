@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+
+sudo umount /mnt/windows
+sudo rmdir /mnt/windows
+

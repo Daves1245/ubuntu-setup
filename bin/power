@@ -1,0 +1,96 @@
+#!/bin/bash
+
+# Call getopt to validate the provided input.
+usage=$(cat <<EOF
+Usage: $0 [parameters]
+Table definitions:
+  current - The current power draw in watts
+  average - The rolling average power draw in watts, over the past few samples
+  remaining_battery - The remaining battery level in kWh
+  battery_capacity - The battery level in kWh, if it was full
+  original_battery - The original retail battery level in kWh
+  time_left - The amount of time until the battery dies based on average power draw
+Notes:
+  original_battery will be greater than battery_capacity because battery capacity decreases over time
+Options:
+  -f, --follow             Follows battery usage
+  -h, --human-readable     Shows in human-readable units
+  --help                   Shows usage menu
+EOF
+)
+
+options=$(getopt -o hf --long follow --long human-readable --long help -- "$@")
+[ $? -eq 0 ] || {
+  echo "$usage"
+  exit 1
+}
+eval set -- "$options"
+
+FOLLOWING=""
+HUMAN=""
+
+while true; do
+  case "$1" in
+  -h|--human-readable)
+    HUMAN="true"
+    ;;
+  -f|--follow)
+    FOLLOWING="true"
+    ;;
+  --help)
+    echo "$usage"
+    exit 0
+    ;;
+  --)
+    # Breaks out of while loop
+    break
+    ;;
+  *)
+    echo "$usage"
+    exit 1
+    ;;
+  esac
+  shift
+done
+
+fmt="%20s %20s %20s %20s %20s %20s"
+
+factor=0.7
+last_pwr=0
+charge_full=$(cat /sys/class/power_supply/BAT0/charge_full)
+charge_full_design=$(cat /sys/class/power_supply/BAT0/charge_full_design)
+voltage_min_design=$(cat /sys/class/power_supply/BAT0/voltage_min_design)
+full_pwr=$(echo "scale=5; $charge_full * $voltage_min_design / 1000000 / 1000000" | bc)
+full_pwr_design=$(echo "scale=5; $charge_full_design * $voltage_min_design / 1000000 / 1000000" | bc)
+printf "$fmt\n" current average remaining_battery battery_capacity original_battery time_left
+while [ 1 ]; do
+  voltage_now=$(cat /sys/class/power_supply/BAT0/voltage_now)
+  current_now=$(cat /sys/class/power_supply/BAT0/current_now)
+  charge_now=$(cat /sys/class/power_supply/BAT0/charge_now)
+  voltage_now=$(cat /sys/class/power_supply/BAT0/voltage_now)
+  cur_pwr=$(echo "scale=5; $voltage_now * $current_now / 1000000 / 1000000" | bc)
+  if [ "$last_pwr" != "0" ]; then
+    last_pwr=$(echo "scale=5; $last_pwr * $factor + $cur_pwr * (1.0 - $factor)" | bc)
+  else
+    last_pwr=$cur_pwr
+  fi
+  rest_pwr=$(echo "scale=5; $voltage_min_design * $charge_now / 1000000 / 1000000" | bc)
+  time_left=$(echo "scale=2; $rest_pwr / $last_pwr" | bc)
+  time_left_hr=$(echo "$time_left / 1" | bc)
+  time_left_min=$(echo "scale=2; ($time_left - $time_left_hr) * 60" | bc)
+  time_left_human=$(printf "%dhr %.2fmin" "$time_left_hr" "$time_left_min")
+  if [[ -n "$FOLLOWING" ]]; then
+    delimiter="\r"
+  else
+    delimiter="\n"
+  fi
+  if [[ -n "$HUMAN" ]]; then
+    printf "$fmt${delimiter}" "${cur_pwr}W" "${last_pwr}W" "${rest_pwr}kWh" "${full_pwr}kWh" "${full_pwr_design}kWh" "$time_left_human"
+  else
+    printf "$fmt${delimiter}" "${cur_pwr}" "${last_pwr}" "${rest_pwr}" "${full_pwr}" "$full_pwr_design" "$time_left"
+  fi
+  if [[ -z "$FOLLOWING" ]]; then
+    break
+  fi
+  sleep 1
+done

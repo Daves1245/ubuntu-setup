@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+if [[ -f "$1" ]]; then
+  md5sum "$1" | awk '{print $1}'
+elif [[ -d "$1" ]]; then
+  cd "$1"
+  find . -type f -exec md5sum {} \; | sort -k 2 | md5sum | awk '{print $1}'
+else
+  echo "Could not find directory \"$1\""
+fi
+

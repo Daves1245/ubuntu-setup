@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+
+export AWS_PROFILE=$(ec2-profile $1)
+echo $(aws ec2 describe-instances --instance-ids $(ec2-id $1) --query 'Reservations[*].Instances[*].PublicIpAddress' --output text)
+

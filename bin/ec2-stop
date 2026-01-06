@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+
+export AWS_PROFILE=$(ec2-profile $1)
+aws ec2 stop-instances --instance-ids $(ec2-id $1)
+

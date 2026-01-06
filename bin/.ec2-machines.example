@@ -1,0 +1,6 @@
+# List ec2_ids here
+# ec2_ids[EC2_NAME1]="EC2_ID1"
+# ec2_ids[EC2_NAME2]="EC2_ID2"
+
+# List ec2 profiles here (optional)
+# ec2_profiles[EC2_NAME2]="my_awsconfigure_profile"

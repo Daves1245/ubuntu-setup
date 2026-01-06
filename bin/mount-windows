@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+if [[ -d /mnt/windows || -f /mnt/windows ]]; then
+    echo "/mnt/windows already exists!"
+    exit 1
+else
+    sudo mkdir /mnt/windows
+    sudo mount -o ro /dev/nvme0n1p4 /mnt/windows
+fi
+

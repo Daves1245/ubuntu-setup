@@ -1,0 +1,4 @@
+#!/bin/bash
+df -h --output=target,used,size,avail | grep "^/\s" | awk '{print $2"/"$3" used, "$4" remaining"}'
+echo
+du -bahd1 $1 2> >(grep -v 'Permission denied') | sort -rh | head -n 15

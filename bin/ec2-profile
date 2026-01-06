@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+
+# Get current directory
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+
+# Fill associative array of IDs
+declare -A ec2_ids
+declare -A ec2_profiles
+. "$DIR/.ec2-machines"
+
+EC2_PROFILE="${ec2_profiles[$1]-default}"
+echo $EC2_PROFILE
