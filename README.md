@@ -1,4 +1,4 @@
 # Usage
 ```bash
-curl github.com/Daves1245/ubuntu-setup/install.sh | bash
+curl https://raw.githubusercontent.com/Daves1245/ubuntu-setup/refs/heads/master/install.sh | bash
 ```
